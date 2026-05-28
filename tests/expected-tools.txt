@@ -1,0 +1,63 @@
+# Core development
+git
+curl
+wget
+vim
+nano
+tmux
+tree
+jq
+file
+xxd
+hexdump
+gcc
+make
+python3
+pipx
+ssh
+
+# Networking
+ip
+ifconfig
+dig
+traceroute
+tcpdump
+tshark
+wireshark
+nmap
+nc
+socat
+whois
+
+# Crypto
+openssl
+john
+hashcat
+
+# Rust and Lean development
+rustup
+rustc
+cargo
+rustfmt
+cargo-clippy
+elan
+lean
+lake
+
+# LaTeX
+pdflatex
+latexmk
+bibtex
+
+# Desktop apps
+obsidian
+code
+
+# Web and services
+nginx
+docker
+burpsuite
+
+# Cloud and infrastructure
+terraform
+aws
