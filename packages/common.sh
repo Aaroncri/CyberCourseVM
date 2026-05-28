@@ -39,19 +39,60 @@ install_desktop_apt_packages() {
   DEBIAN_FRONTEND=noninteractive apt-get install -y "$@"
 }
 
+ensure_snap_ready() {
+  if ! command -v snap >/dev/null 2>&1; then
+    install_apt_packages snapd
+  fi
+
+  systemctl enable --now snapd.socket >/dev/null 2>&1 || true
+  systemctl enable --now snapd.service >/dev/null 2>&1 || true
+
+  if [[ -e /var/lib/snapd/snap && ! -e /snap ]]; then
+    ln -s /var/lib/snapd/snap /snap
+  fi
+
+  case ":${PATH}:" in
+    *":/snap/bin:"*) ;;
+    *) export PATH="/snap/bin:${PATH}" ;;
+  esac
+
+  local attempt
+  for attempt in {1..30}; do
+    if snap wait system seed.loaded >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 2
+  done
+
+  echo "snapd did not become ready after waiting." >&2
+  systemctl --no-pager --full status snapd.service snapd.socket >&2 || true
+  snap changes >&2 || true
+  exit 1
+}
+
 install_snap_package() {
   local package_name="$1"
   shift
 
-  if ! command -v snap >/dev/null 2>&1; then
-    install_apt_packages snapd
-  fi
+  ensure_snap_ready
 
   if snap list "${package_name}" >/dev/null 2>&1; then
     return 0
   fi
 
-  snap install "${package_name}" "$@"
+  echo "Installing snap package: ${package_name}"
+  if ! snap install "${package_name}" "$@"; then
+    echo "Failed to install snap package: ${package_name}" >&2
+    snap changes >&2 || true
+    snap tasks --last=install >&2 || true
+    exit 1
+  fi
+
+  if ! snap list "${package_name}" >/dev/null 2>&1; then
+    echo "snap install completed, but package is not listed: ${package_name}" >&2
+    snap list >&2 || true
+    exit 1
+  fi
 }
 
 ensure_group_membership() {

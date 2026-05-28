@@ -19,6 +19,9 @@ From a clean Ubuntu Desktop VM:
 sudo ./install.sh
 ```
 
+Run this only in the student VM or another disposable Ubuntu environment. The
+script installs system packages and desktop applications globally.
+
 The setup may be factored into multiple scripts, but students and instructors
 should only need to run `install.sh`.
 
@@ -64,3 +67,18 @@ When running directly from the repository before installing the command:
 - Do not put credentials, flags, solutions, tokens, or private keys into the VM.
 - Update `software-list.md` first when adding or removing tools.
 - Update `tests/expected-tools.txt` when the verification checks need to change.
+
+## Uninstall
+
+If the installer was run on the wrong Ubuntu system:
+
+```bash
+sudo COURSE_UNINSTALL_CONFIRM=yes ./uninstall.sh
+```
+
+By default, the uninstall script leaves user Rust and Lean toolchains alone. To
+remove them for the target user too:
+
+```bash
+sudo COURSE_UNINSTALL_CONFIRM=yes COURSE_REMOVE_USER_TOOLCHAINS=yes COURSE_TARGET_USER="$USER" ./uninstall.sh
+```
