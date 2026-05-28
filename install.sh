@@ -11,14 +11,23 @@ require_ubuntu
 
 echo "Installing Fields Information Security student workstation tools..."
 
-"${SCRIPT_DIR}/packages/base.sh"
-"${SCRIPT_DIR}/packages/python.sh"
-"${SCRIPT_DIR}/packages/networking.sh"
-"${SCRIPT_DIR}/packages/crypto.sh"
-"${SCRIPT_DIR}/packages/dev-languages.sh"
-"${SCRIPT_DIR}/packages/desktop-apps.sh"
-"${SCRIPT_DIR}/packages/web-tools.sh"
-"${SCRIPT_DIR}/packages/cloud-tools.sh"
+run_package_script() {
+  local label="$1"
+  local script_path="$2"
+
+  echo
+  echo "== ${label} =="
+  bash "${script_path}"
+}
+
+run_package_script "Base tools" "${SCRIPT_DIR}/packages/base.sh"
+run_package_script "Python tools" "${SCRIPT_DIR}/packages/python.sh"
+run_package_script "Networking tools" "${SCRIPT_DIR}/packages/networking.sh"
+run_package_script "Cryptography tools" "${SCRIPT_DIR}/packages/crypto.sh"
+run_package_script "Rust and Lean tools" "${SCRIPT_DIR}/packages/dev-languages.sh"
+run_package_script "Cloud tools" "${SCRIPT_DIR}/packages/cloud-tools.sh"
+run_package_script "Desktop apps" "${SCRIPT_DIR}/packages/desktop-apps.sh"
+run_package_script "Web tools" "${SCRIPT_DIR}/packages/web-tools.sh"
 
 install -m 0755 "${SCRIPT_DIR}/verify.sh" /usr/local/bin/check-course-environment
 install -m 0644 "${SCRIPT_DIR}/tests/expected-tools.txt" /etc/course-expected-tools.txt
