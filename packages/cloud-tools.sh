@@ -9,11 +9,19 @@ require_root
 require_ubuntu
 
 if ! command -v snap >/dev/null 2>&1; then
+  echo "+ apt-get update"
   apt-get update
+  echo "+ apt-get install -y snapd"
   DEBIAN_FRONTEND=noninteractive apt-get install -y snapd
 fi
 
+echo "+ snap version"
+snap version
+
+echo "+ snap install terraform --classic"
 snap install terraform --classic
+
+echo "+ snap install aws-cli --classic"
 snap install aws-cli --classic
 
 if [[ ! -x /snap/bin/terraform ]]; then
@@ -35,3 +43,5 @@ ln -sf /snap/bin/aws /usr/local/bin/aws
 
 /usr/local/bin/terraform version >/dev/null
 /usr/local/bin/aws --version >/dev/null
+
+echo "Terraform and AWS CLI installed successfully."
