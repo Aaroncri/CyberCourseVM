@@ -31,10 +31,113 @@ warn() {
 
 check_command() {
   local command_name="$1"
-  if command -v "${command_name}" >/dev/null 2>&1; then
-    pass "command available: ${command_name}"
+  local candidate
+
+  if candidate="$(command -v "${command_name}" 2>/dev/null)"; then
+    pass "command available: ${command_name} (${candidate})"
+    return 0
+  fi
+
+  for candidate in \
+    "/snap/bin/${command_name}" \
+    "${HOME}/.cargo/bin/${command_name}" \
+    "${HOME}/.elan/bin/${command_name}"; do
+    if [[ -x "${candidate}" ]]; then
+      pass "command available: ${command_name} (${candidate})"
+      return 0
+    fi
+  done
+
+  if [[ "${command_name}" == "burpsuite" ]]; then
+    for candidate in /snap/bin/burpsuite /snap/bin/burp-suite; do
+      if [[ -x "${candidate}" ]]; then
+        pass "command available: ${command_name} (${candidate})"
+        return 0
+      fi
+    done
+  fi
+
+  if [[ "${command_name}" == "aws" ]]; then
+    for candidate in /snap/bin/aws /snap/bin/aws-cli; do
+      if [[ -x "${candidate}" ]]; then
+        pass "command available: ${command_name} (${candidate})"
+        return 0
+      fi
+    done
+  fi
+
+  if [[ "${command_name}" == "terraform" ]]; then
+    for candidate in /snap/bin/terraform; do
+      if [[ -x "${candidate}" ]]; then
+        pass "command available: ${command_name} (${candidate})"
+        return 0
+      fi
+    done
+  fi
+
+  fail "missing command: ${command_name}"
+}
+
+run_tool() {
+  local command_name="$1"
+  shift
+  local candidate
+
+  if candidate="$(command -v "${command_name}" 2>/dev/null)"; then
+    "${candidate}" "$@"
+    return $?
+  fi
+
+  for candidate in \
+    "/snap/bin/${command_name}" \
+    "${HOME}/.cargo/bin/${command_name}" \
+    "${HOME}/.elan/bin/${command_name}"; do
+    if [[ -x "${candidate}" ]]; then
+      "${candidate}" "$@"
+      return $?
+    fi
+  done
+
+  return 127
+}
+
+check_any_command() {
+  local display_name="$1"
+  shift
+  local command_name
+
+  for command_name in "$@"; do
+    if command -v "${command_name}" >/dev/null 2>&1 || [[ -x "/snap/bin/${command_name}" ]]; then
+      pass "command available: ${display_name} (${command_name})"
+      return 0
+    fi
+  done
+
+  fail "missing command: ${display_name}"
+}
+
+check_standard_command() {
+  local command_name="$1"
+  if [[ "${command_name}" == "burpsuite" ]]; then
+    check_any_command "burpsuite" burpsuite burp-suite
+  elif [[ "${command_name}" == "aws" ]]; then
+    check_any_command "aws" aws aws-cli
   else
-    fail "missing command: ${command_name}"
+    check_command "${command_name}"
+  fi
+}
+
+check_web_proxy() {
+  if command -v zaproxy >/dev/null 2>&1 || [[ -x /snap/bin/zaproxy ]]; then
+    pass "ZAP command is available"
+  else
+    warn "ZAP command was not found"
+  fi
+
+  if command -v burpsuite >/dev/null 2>&1 || [[ -x /snap/bin/burpsuite ]] || [[ -x /snap/bin/burp-suite ]]; then
+    pass "Burp Suite command is available"
+  else
+    fail "Burp Suite command was not found"
   fi
 }
 
@@ -43,7 +146,7 @@ if [[ ! -r "${EXPECTED_TOOLS}" ]]; then
 else
   while IFS= read -r tool_name; do
     [[ -z "${tool_name}" || "${tool_name}" =~ ^# ]] && continue
-    check_command "${tool_name}"
+    check_standard_command "${tool_name}"
   done < "${EXPECTED_TOOLS}"
 fi
 
@@ -74,19 +177,19 @@ if command -v docker >/dev/null 2>&1; then
   fi
 fi
 
-if command -v terraform >/dev/null 2>&1; then
-  terraform version >/dev/null 2>&1 && pass "Terraform executes" || fail "Terraform command failed"
+if run_tool terraform version >/dev/null 2>&1; then
+  pass "Terraform executes"
+elif command -v terraform >/dev/null 2>&1 || [[ -x /snap/bin/terraform ]]; then
+  fail "Terraform command failed"
 fi
 
-if command -v aws >/dev/null 2>&1; then
-  aws --version >/dev/null 2>&1 && pass "AWS CLI executes" || fail "AWS CLI command failed"
+if run_tool aws --version >/dev/null 2>&1 || run_tool aws-cli --version >/dev/null 2>&1; then
+  pass "AWS CLI executes"
+elif command -v aws >/dev/null 2>&1 || command -v aws-cli >/dev/null 2>&1 || [[ -x /snap/bin/aws ]] || [[ -x /snap/bin/aws-cli ]]; then
+  fail "AWS CLI command failed"
 fi
 
-if command -v zaproxy >/dev/null 2>&1 || command -v burpsuite >/dev/null 2>&1; then
-  pass "web-security proxy command is available"
-else
-  warn "no ZAP or Burp command found; this is expected only if web proxy installation was skipped"
-fi
+check_web_proxy
 
 echo
 printf 'Summary: %d passed, %d warning(s), %d failed\n' "${PASS_COUNT}" "${WARN_COUNT}" "${FAIL_COUNT}"

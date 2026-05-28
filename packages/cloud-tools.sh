@@ -19,10 +19,16 @@ if ! command -v terraform >/dev/null 2>&1; then
   # shellcheck disable=SC1091
   . /etc/os-release
   echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com ${UBUNTU_CODENAME} main" > /etc/apt/sources.list.d/hashicorp.list
-  apt-get update
-  DEBIAN_FRONTEND=noninteractive apt-get install -y terraform
+  if apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y terraform; then
+    :
+  else
+    echo "Terraform apt install failed; falling back to snap." >&2
+    rm -f /etc/apt/sources.list.d/hashicorp.list
+    apt-get update
+    install_snap_package terraform --classic
+  fi
 fi
 
-if ! command -v aws >/dev/null 2>&1; then
+if ! command -v aws >/dev/null 2>&1 && [[ ! -x /snap/bin/aws ]]; then
   install_snap_package aws-cli --classic
 fi

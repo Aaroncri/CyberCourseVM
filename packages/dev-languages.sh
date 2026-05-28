@@ -16,6 +16,31 @@ install_apt_packages \
   clang \
   cmake
 
+cat > /etc/profile.d/course-dev-paths.sh <<'EOF'
+if [ -d "$HOME/.cargo/bin" ]; then
+  case ":$PATH:" in
+    *":$HOME/.cargo/bin:"*) ;;
+    *) PATH="$HOME/.cargo/bin:$PATH" ;;
+  esac
+fi
+
+if [ -d "$HOME/.elan/bin" ]; then
+  case ":$PATH:" in
+    *":$HOME/.elan/bin:"*) ;;
+    *) PATH="$HOME/.elan/bin:$PATH" ;;
+  esac
+fi
+
+if [ -d /snap/bin ]; then
+  case ":$PATH:" in
+    *":/snap/bin:"*) ;;
+    *) PATH="/snap/bin:$PATH" ;;
+  esac
+fi
+
+export PATH
+EOF
+
 USER_NAME="$(target_user)"
 if ! id "${USER_NAME}" >/dev/null 2>&1; then
   echo "Target user '${USER_NAME}' does not exist; skipped Rust and Lean setup." >&2
