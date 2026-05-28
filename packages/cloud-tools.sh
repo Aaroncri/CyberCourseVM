@@ -11,31 +11,22 @@ require_ubuntu
 install_snap_package terraform --classic
 install_snap_package aws-cli --classic
 
-if [[ -x /snap/bin/terraform ]]; then
-  ln -sf /snap/bin/terraform /usr/local/bin/terraform
-else
-  cat > /usr/local/bin/terraform <<'EOF'
-#!/usr/bin/env sh
-exec snap run terraform "$@"
-EOF
-  chmod 0755 /usr/local/bin/terraform
+if [[ ! -x /snap/bin/terraform ]]; then
+  echo "Terraform snap installed, but /snap/bin/terraform does not exist." >&2
+  snap list terraform >&2 || true
+  snap info terraform >&2 || true
+  exit 1
 fi
 
-if [[ -x /snap/bin/aws ]]; then
-  ln -sf /snap/bin/aws /usr/local/bin/aws
-elif snap run aws-cli.aws --version >/dev/null 2>&1; then
-  cat > /usr/local/bin/aws <<'EOF'
-#!/usr/bin/env sh
-exec snap run aws-cli.aws "$@"
-EOF
-  chmod 0755 /usr/local/bin/aws
-else
-  cat > /usr/local/bin/aws <<'EOF'
-#!/usr/bin/env sh
-exec snap run aws-cli "$@"
-EOF
-  chmod 0755 /usr/local/bin/aws
+if [[ ! -x /snap/bin/aws ]]; then
+  echo "AWS CLI snap installed, but /snap/bin/aws does not exist." >&2
+  snap list aws-cli >&2 || true
+  snap info aws-cli >&2 || true
+  exit 1
 fi
+
+ln -sf /snap/bin/terraform /usr/local/bin/terraform
+ln -sf /snap/bin/aws /usr/local/bin/aws
 
 /usr/local/bin/terraform version >/dev/null
 /usr/local/bin/aws --version >/dev/null
