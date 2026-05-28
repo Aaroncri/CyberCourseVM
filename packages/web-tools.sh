@@ -21,17 +21,39 @@ if id "${USER_NAME}" >/dev/null 2>&1 && getent group docker >/dev/null 2>&1; the
   ensure_group_membership docker "${USER_NAME}"
 fi
 
+install_zap() {
+  install_snap_package zaproxy --classic
+  if [[ -x /snap/bin/zaproxy && ! -e /usr/local/bin/zaproxy ]]; then
+    ln -s /snap/bin/zaproxy /usr/local/bin/zaproxy
+  fi
+}
+
+install_burp() {
+  install_snap_package burpsuite
+
+  if [[ -x /snap/bin/burpsuite && ! -e /usr/local/bin/burpsuite ]]; then
+    ln -s /snap/bin/burpsuite /usr/local/bin/burpsuite
+  elif [[ -x /snap/bin/burp-suite && ! -e /usr/local/bin/burpsuite ]]; then
+    ln -s /snap/bin/burp-suite /usr/local/bin/burpsuite
+  fi
+
+  if ! command -v burpsuite >/dev/null 2>&1 && [[ ! -x /snap/bin/burpsuite && ! -x /snap/bin/burp-suite ]]; then
+    echo "Burp Suite snap installed, but no burpsuite command was found." >&2
+    exit 1
+  fi
+}
+
 WEB_PROXY="${COURSE_WEB_PROXY_TOOL:-both}"
 case "${WEB_PROXY}" in
   zap)
-    install_snap_package zaproxy --classic
+    install_zap
     ;;
   burp)
-    install_snap_package burpsuite
+    install_burp
     ;;
   both)
-    install_snap_package zaproxy --classic
-    install_snap_package burpsuite
+    install_zap
+    install_burp
     ;;
   none)
     echo "Skipping web proxy tool installation because COURSE_WEB_PROXY_TOOL=none."
