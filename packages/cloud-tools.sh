@@ -8,8 +8,13 @@ source "${SCRIPT_DIR}/common.sh"
 require_root
 require_ubuntu
 
-install_snap_package terraform --classic
-install_snap_package aws-cli --classic
+if ! command -v snap >/dev/null 2>&1; then
+  apt-get update
+  DEBIAN_FRONTEND=noninteractive apt-get install -y snapd
+fi
+
+snap install terraform --classic
+snap install aws-cli --classic
 
 if [[ ! -x /snap/bin/terraform ]]; then
   echo "Terraform snap installed, but /snap/bin/terraform does not exist." >&2
